@@ -1,7 +1,7 @@
 const token = "6474557268:AAE654zdKVcxj_5wP_QDXeANlvOo1TiAS7k";
 const telegramUrl = "https://api.telegram.org/bot" + token;
 const webAppUrl = "https://script.google.com/macros/s/AKfycbxUv9T2tc8n20Dg6dk30J9qazrD4NAneE-qvDXT_Z6-xvz6FI61hCk0ChFFlkJ_aKpe/exec";
-// cập nhật ảnh đại diện cho bọt bằng cách gửi /setuserpic tới @BotFather
+
 const CHAT_ID = "6169796686";
 
 function getMe() {
