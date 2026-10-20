@@ -2,7 +2,6 @@ require("dotenv").config();
 const express = require("express");
 const helmet = require("helmet");
 const rateLimit = require("express-rate-limit");
-const crypto = require("crypto");
 const path = require("path");
 
 const app = express();
@@ -28,70 +27,7 @@ app.use(helmet({
 }));
 app.use(express.json({ limit: "10kb" }));
 
-const APP_PASSWORD = process.env.APP_PASSWORD || "";
-const sessionStore = new Map();
 const cache = new Map();
-
-function safeEqual(a, b) {
-  const aa = Buffer.from(String(a || ""));
-  const bb = Buffer.from(String(b || ""));
-  return aa.length === bb.length && crypto.timingSafeEqual(aa, bb);
-}
-function parseCookies(req) {
-  const result = {};
-  for (const part of String(req.headers.cookie || "").split(";")) {
-    const i = part.indexOf("=");
-    if (i > -1) result[part.slice(0, i).trim()] = decodeURIComponent(part.slice(i + 1).trim());
-  }
-  return result;
-}
-function requireAuth(req, res, next) {
-  const sid = parseCookies(req).sapo_lookup_sid;
-  const expiry = sid && sessionStore.get(sid);
-  if (!expiry || expiry < Date.now()) {
-    if (sid) sessionStore.delete(sid);
-    return res.status(401).json({ error: "Phiên đăng nhập hết hạn. Hãy đăng nhập lại." });
-  }
-  next();
-}
-const loginLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000,
-  limit: 10,
-  standardHeaders: true,
-  legacyHeaders: false,
-  message: { error: "Thử đăng nhập quá nhiều lần. Vui lòng đợi 15 phút." }
-});
-app.use("/api/login", loginLimiter);
-
-app.get("/api/status", (req, res) => {
-  const sid = parseCookies(req).sapo_lookup_sid;
-  const expiry = sid && sessionStore.get(sid);
-  res.json({ authenticated: Boolean(expiry && expiry > Date.now()) });
-});
-
-app.post("/api/login", (req, res) => {
-  if (!APP_PASSWORD) return res.status(503).json({ error: "Máy chủ chưa cấu hình APP_PASSWORD." });
-  const password = req.body && req.body.password;
-  if (!safeEqual(password, APP_PASSWORD)) return res.status(401).json({ error: "Mật khẩu không đúng." });
-  const sid = crypto.randomBytes(32).toString("hex");
-  sessionStore.set(sid, Date.now() + 12 * 60 * 60 * 1000);
-  res.setHeader("Set-Cookie", [
-    `sapo_lookup_sid=${encodeURIComponent(sid)}`,
-    "HttpOnly",
-    "SameSite=Strict",
-    "Path=/",
-    "Max-Age=43200",
-    process.env.NODE_ENV === "production" ? "Secure" : ""
-  ].filter(Boolean).join("; "));
-  res.json({ ok: true });
-});
-
-app.post("/api/logout", requireAuth, (req, res) => {
-  const sid = parseCookies(req).sapo_lookup_sid;
-  if (sid) sessionStore.delete(sid);
-  res.setHeader("Set-Cookie", "sapo_lookup_sid=; HttpOnly; SameSite=Strict; Path=/; Max-Age=0");
-  res.json({ ok: true });
-});
 
 function getSapoConfig() {
   const origin = process.env.SAPO_ORIGIN || "https://market-place.sapoapps.vn";
@@ -207,7 +143,7 @@ async function fetchOrdersPage(config, page) {
     clearTimeout(timeout);
   }
 }
-app.get("/api/search", requireAuth, async (req, res) => {
+app.get("/api/search", async (req, res) => {
   const suffix = String(req.query.last4 || "").replace(/\D/g, "");
   if (!/^\d{4}$/.test(suffix)) return res.status(400).json({ error: "Nhập đúng 4 chữ số cuối của mã đơn." });
   const cached = cache.get(suffix);
@@ -248,5 +184,4 @@ app.get("*", (_req, res) => res.sendFile(path.join(__dirname, "public", "index.h
 
 app.listen(PORT, () => {
   console.log(`Sapo mobile lookup đang chạy tại cổng ${PORT}`);
-  if (!APP_PASSWORD) console.warn("CẢNH BÁO: Chưa đặt APP_PASSWORD; hãy cấu hình trước khi dùng.");
 });

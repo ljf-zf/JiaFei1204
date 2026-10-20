@@ -1,5 +1,4 @@
 const $ = (id) => document.getElementById(id);
-const loginPanel = $("login-panel");
 const searchPanel = $("search-panel");
 const resultsSection = $("results-section");
 const statusEl = $("status");
@@ -20,15 +19,9 @@ async function api(url, options = {}) {
   if (!response.ok) throw new Error(data.error || `Lỗi kết nối (${response.status})`);
   return data;
 }
-function showLogin() {
-  loginPanel.classList.remove("hidden");
-  searchPanel.classList.add("hidden");
-  $("logout").classList.add("hidden");
-}
 function showApp() {
   loginPanel.classList.add("hidden");
   searchPanel.classList.remove("hidden");
-  $("logout").classList.remove("hidden");
   $("last4").focus({ preventScroll: true });
 }
 function escapeHtml(value) {
@@ -87,7 +80,6 @@ async function search(last4) {
       signal: activeController.signal
     });
     const data = await response.json().catch(() => ({}));
-    if (response.status === 401) { showLogin(); throw new Error(data.error || "Hãy đăng nhập lại."); }
     if (!response.ok) throw new Error(data.error || "Không tìm được đơn hàng.");
     renderOrders(data);
     setStatus(data.cached ? "Kết quả vừa được lưu tạm trong thời gian ngắn." : "Đã cập nhật từ Sapo.");
@@ -101,22 +93,6 @@ async function search(last4) {
     $("search-button").textContent = "Tra cứu";
   }
 }
-$("login-form").addEventListener("submit", async event => {
-  event.preventDefault();
-  $("login-error").textContent = "";
-  const button = event.submitter;
-  if (button) button.disabled = true;
-  try {
-    await api("/api/login", { method:"POST", body:JSON.stringify({ password:$("password").value }) });
-    $("password").value = "";
-    showApp();
-    setStatus("Đã đăng nhập.");
-  } catch (err) {
-    $("login-error").textContent = err.message;
-  } finally {
-    if (button) button.disabled = false;
-  }
-});
 $("search-form").addEventListener("submit", event => {
   event.preventDefault();
   search($("last4").value.trim());
@@ -133,17 +109,7 @@ $("clear").addEventListener("click", () => {
   resultsSection.classList.add("hidden");
   setStatus("");
 });
-$("logout").addEventListener("click", async () => {
-  try { await api("/api/logout", { method:"POST", body:"{}" }); } catch {}
-  showLogin();
-  setStatus("Đã đăng xuất.");
-});
-(async function init() {
-  try {
-    const state = await api("/api/status");
-    if (state.authenticated) showApp(); else showLogin();
-  } catch {
-    showLogin();
-    setStatus("Không kết nối được máy chủ.", "error");
-  }
+(function init() {
+  showApp();
+  setStatus("Sẵn sàng tra cứu đơn hàng.");
 })();

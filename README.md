@@ -8,7 +8,7 @@ Web app tối ưu cho điện thoại: nhập 4 số cuối, liệt kê các đ�
 - Extension cũ lưu thông tin xác thực trong `chrome.storage.local` dưới khóa `sapoAuth`; web app không tự đọc được dữ liệu này.
 - API `/v2/orders` và các trường được quan sát trong extension có thể là API nội bộ Marketplace, không được đảm bảo ổn định như API công khai. Hãy kiểm tra quyền truy cập và điều khoản Sapo trước khi triển khai.
 - Không gửi token hoặc file `.env` qua chat, không nhúng token vào `public/app.js`, không commit `.env` lên Git.
-- Để dùng trên điện thoại từ ngoài mạng nội bộ, cần triển khai lên máy chủ có HTTPS. Chỉ dùng `APP_PASSWORD` riêng cho ứng dụng và giới hạn người được phép truy cập.
+- Để dùng trên điện thoại từ ngoài mạng nội bộ, cần triển khai lên máy chủ có HTTPS. Chỉ dùng `(đã bỏ đăng nhập)` riêng cho ứng dụng và giới hạn người được phép truy cập.
 
 ## Chạy thử trên máy chủ/máy tính
 
@@ -16,7 +16,7 @@ Yêu cầu Node.js 20 trở lên.
 
 1. Giải nén thư mục.
 2. Sao chép `.env.example` thành `.env`.
-3. Điền `APP_PASSWORD` và các giá trị xác thực Sapo vào `.env` trên máy chủ.
+3. Điền `(đã bỏ đăng nhập)` và các giá trị xác thực Sapo vào `.env` trên máy chủ.
 4. Cài và chạy:
 
    ```bash
@@ -56,3 +56,8 @@ Không đưa thông tin này vào frontend hoặc ảnh chụp màn hình. Nếu
 - Phiên đăng nhập hết hạn sau 12 giờ; đăng xuất sẽ thu hồi phiên.
 - Cache kết quả mặc định 20 giây, không lưu lâu dài danh sách đơn.
 - Trước khi sử dụng thực tế, nên bổ sung kiểm thử với response đã ẩn thông tin cá nhân và cơ chế cập nhật token phù hợp.
+
+
+## Lưu ý về truy cập nội bộ
+
+Phiên bản này đã bỏ màn hình đăng nhập. Nếu triển khai dưới dạng Render Web Service thông thường, đường dẫn có thể truy cập công khai; chỉ chia sẻ cho nhân viên và không đăng token Sapo vào mã nguồn/GitHub. Token Sapo vẫn chỉ được đọc ở máy chủ qua biến môi trường. Nếu cần giới hạn thật sự theo nhân viên, hãy dùng VPN hoặc lớp kiểm soát truy cập ở phía máy chủ.
